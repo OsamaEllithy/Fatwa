@@ -31,27 +31,70 @@ const data = {
     "السلام عند اللقاء": { حكم: "سنة", دليل: "قال النبي ﷺ: «لا تدخلوا الجنة حتى تؤمنوا، ولا تؤمنوا حتى تحابوا، أولا أدلكم على شيء إذا فعلتموه تحاببتم؟ أفشوا السلام بينكم» [رواه مسلم]" }
 };
 
-function checkQuestion() {
-    const input = document.getElementById("question").value.trim().toLowerCase();
-    const resultDiv = document.getElementById("result");
+const input = document.getElementById("question");
+const resultDiv = document.getElementById("result");
 
+function normalize(text) {
+    return text.replace(/^ال/, "").trim().toLowerCase();
+}
+
+function checkQuestion() {
+    const inputText = normalize(input.value);
     let foundKey = null;
+
     for (const key in data) {
-        if (key.includes(input) || input.includes(key)) {
+        const normalizedKey = normalize(key);
+        const normalizedHukm = normalize(data[key].حكم);
+
+        if (
+            normalizedKey.includes(inputText) ||
+            inputText.includes(normalizedKey) ||
+            normalizedHukm.includes(inputText) ||
+            inputText.includes(normalizedHukm)
+        ) {
             foundKey = key;
             break;
         }
     }
 
     if (foundKey) {
-        resultDiv.innerHTML = `<strong>${data[foundKey].حكم}</strong><br>${data[foundKey].دليل}`;
+        resultDiv.innerHTML = `
+            <strong style="font-size: 24px;">${foundKey}</strong><br>
+            <strong>${data[foundKey].حكم}</strong><br>
+            ${data[foundKey].دليل}
+        `;
         resultDiv.style.zIndex = '1000';
     } else {
         resultDiv.innerHTML = "السؤال غير موجود في قاعدة البيانات، من فضلك راجع عالم موثوق.";
     }
 }
 
-document.getElementById("question").addEventListener("keypress", function (e) {
+// Auto Suggest
+input.addEventListener("input", function () {
+    const list = document.getElementById("suggestions");
+    if (!list) return;
+
+    const value = normalize(this.value);
+    list.innerHTML = "";
+
+    if (value.length === 0) return;
+
+    for (const key in data) {
+        if (normalize(key).startsWith(value)) {
+            const option = document.createElement("div");
+            option.textContent = key;
+            option.className = "suggestion";
+            option.onclick = () => {
+                input.value = key;
+                list.innerHTML = "";
+                checkQuestion();
+            };
+            list.appendChild(option);
+        }
+    }
+});
+
+input.addEventListener("keypress", function (e) {
     if (e.key === "Enter") checkQuestion();
 });
 
